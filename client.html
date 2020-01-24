@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RTSC Client</title>
+
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+<style>
+    *{
+        border:none;
+        margin:0;
+    }
+    video{
+        display:block;
+        margin: 0;
+        max-width: 800px;
+    }
+</style>
+<video autoplay></video>
+<script type = "text/javascript">
+    // In the renderer process.
+    const { desktopCapturer } = require('electron')
+let socket=io("http://localhost:3258/client")
+    socket.emit("code","H")
+    socket.on("ready",()=>{
+
+        desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
+            for (const source of sources) {
+                //if (source.name === 'RTSC Client') {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: {
+                            mandatory: {
+                                chromeMediaSource: 'desktop',
+                                chromeMediaSourceId: source.id,
+                            }
+                        }
+                    })
+                    handleStream(stream)
+                } catch (e) {
+                    handleError(e)
+                }
+                return
+
+            }
+        })
+
+        function handleStream (stream) {
+            const video = document.querySelector('video')
+            video.src = stream.thumbnail
+            video.onloadedmetadata = (e) => video.play()
+            socket.emit("screen",stream.thumbnail)
+        }
+
+        function handleError (e) {
+            console.log(e)
+        }
+    })
+</script>
+</body>
+</html>
